@@ -1,7 +1,7 @@
 services:
-  db:
-    container_name: postgres
+  postgres:
     image: postgres:17-alpine
+    container_name: postgres
     environment:
       POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'postgres'
@@ -9,21 +9,46 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - ./data/vol-pgdata:/var/lib/postgresql/data
+      - ./vol-pgdata:/var/lib/postgresql/data
+    networks:
+      - pg-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ny_taxi"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: on-failure
 
   pgadmin:
-    container_name: pgadmin
     image: dpage/pgadmin4:latest
+    container_name: pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: "pgadmin@pgadmin.com"
       PGADMIN_DEFAULT_PASSWORD: "pgadmin"
+    user: '$UID:$GID'
     ports:
       - "8080:80"
     volumes:
-      - ./data/vol-pgadmin:/var/lib/pgadmin  
+      - ./vol-pgadmin_data:/var/lib/pgadmin  
+    networks:
+       - pg-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:80/ || exit 1"]
+      start_period: 10s
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    restart: on-failure:5
 
-volumes:
-  vol-pgdata:
-    name: vol-pgdata
-  vol-pgadmin:
-    name: vol-pgadmin
+networks:
+  pg-network:
+    name: pg-network
+
+# volumes:
+#   vol-pgdata:
+#     name: vol-pgdata
+#   vol-pgadmin_data:
+#     name: vol-pgadmin_data
