@@ -174,4 +174,5 @@ cython_debug/
 *.csv
 *.gz
 *.gz.1
-data/
+vol-pgdata/
+vol-pgadmin_data/
